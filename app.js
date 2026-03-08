@@ -1,0 +1,35 @@
+require('dotenv').config();
+
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
+
+const errorHandler = require('./src/middlewares/errorHandler');
+
+// Import routes
+const userRoutes = require('./src/routes/user');
+const postRoutes = require('./src/routes/post');
+
+const app = express();
+
+// --------------- Global middleware ---------------
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Serve uploaded images on /images
+app.use('/images', express.static(path.join(__dirname, 'src', 'uploads')));
+
+// --------------- Routes ---------------
+app.use('/api/users', userRoutes);
+app.use('/api/posts', postRoutes);
+
+// Health check
+app.get('/health', (_req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
+// --------------- Centralised error handler (must be last) ---------------
+app.use(errorHandler);
+
+module.exports = app;
