@@ -11,6 +11,7 @@ const appointmentSchema = new mongoose.Schema(
       enum: ['pending', 'accepted', 'rejected'],
       default: 'pending',
     },
+    rating: { type: Number, min: 1, max: 5 }, // note donnée par l'utilisateur pour ce rendez-vous
   },
   { timestamps: true }
 );

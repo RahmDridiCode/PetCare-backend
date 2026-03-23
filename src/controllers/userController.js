@@ -140,7 +140,9 @@ const findAllUsers = async (_req, res, next) => {
 
 const getAllVeterinarians = async (_req, res, next) => {
   try {
-    const vets = await User.find({ role: 'veterinaire' });
+    const vets = await User.find({ role: 'veterinaire' })
+     .sort({ rating: -1 }) // tri par note décroissante
+     .select('fname lname rating ratingCount image'); // sélectionne les champs à afficher
     res.status(200).json(vets);
   } catch (err) {
     next(err);

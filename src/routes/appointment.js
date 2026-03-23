@@ -6,6 +6,7 @@ const {
   getVeterinarianAppointments,
   acceptAppointment,
   rejectAppointment,
+  rateVeterinarian,
 } = require('../controllers/appointmentController');
 
 const router = express.Router();
@@ -18,6 +19,7 @@ router.get('/user', authenticate, getUserAppointments);
 
 // Get appointments for veterinarian
 router.get('/veterinarian', authenticate, authorize('veterinaire'), getVeterinarianAppointments);
+router.put('/rate', authenticate, rateVeterinarian);
 
 // Accept / Reject (veterinarian only)
 router.put('/:id/accept', authenticate, authorize('veterinaire'), acceptAppointment);

@@ -38,7 +38,7 @@ const getUserAppointments = async (req, res, next) => {
     if (!req.user || !req.user.userId)
       return res.status(401).json({ message: 'Utilisateur non authentifié' });
 
-    const appointments = await Appointment.find({ userId: req.user.userId }).populate('veterinarianId', 'fname lname image');
+      const appointments = await Appointment.find({ userId: req.user.userId }).populate('veterinarianId', 'fname lname image').sort({ date: -1 });
     res.status(200).json(appointments);
   } catch (err) {
     next(err);
@@ -54,7 +54,7 @@ const getVeterinarianAppointments = async (req, res, next) => {
     if (req.user.role !== 'veterinaire')
       return res.status(403).json({ message: 'Accès refusé' });
 
-    const appointments = await Appointment.find({ veterinarianId: req.user.userId }).populate('userId', 'fname lname image');
+    const appointments = await Appointment.find({ veterinarianId: req.user.userId }).populate('userId', 'fname lname image').sort({ date: -1 });
     res.status(200).json(appointments);
   } catch (err) {
     next(err);
@@ -99,10 +99,42 @@ const rejectAppointment = async (req, res, next) => {
   }
 };
 
+const rateVeterinarian = async (req, res, next) => {
+    try {
+        const { appointmentId, rating } = req.body;
+
+        if (!req.user || !req.user.userId)
+            return res.status(401).json({ message: 'Utilisateur non authentifié' });
+
+        const appointment = await Appointment.findById(appointmentId);
+        if (!appointment) return res.status(404).json({ message: 'Rendez-vous introuvable' });
+
+        if (appointment.userId.toString() !== req.user.userId)
+            return res.status(403).json({ message: "Vous ne pouvez noter que vos rendez-vous" });
+
+        if (rating < 1 || rating > 5)
+            return res.status(400).json({ message: 'La note doit être entre 1 et 5' });
+
+        appointment.rating = rating;
+        await appointment.save();
+
+        // Mettre à jour la moyenne globale dans User
+        const vet = await User.findById(appointment.veterinarianId);
+        vet.rating = ((vet.rating * vet.ratingCount) + rating) / (vet.ratingCount + 1);
+        vet.ratingCount += 1;
+        await vet.save();
+
+        res.status(200).json({ message: 'Rendez-vous noté avec succès', appointment, vet });
+    } catch (err) {
+        next(err);
+    }
+};
+
 module.exports = {
   createAppointment,
   getUserAppointments,
   getVeterinarianAppointments,
   acceptAppointment,
   rejectAppointment,
+  rateVeterinarian,
 };

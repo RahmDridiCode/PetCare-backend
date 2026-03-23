@@ -39,6 +39,8 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    rating: { type: Number, default: 0 },        // note moyenne
+    ratingCount: { type: Number, default: 0 }    // nombre de votes
   },
   {
     timestamps: true,
