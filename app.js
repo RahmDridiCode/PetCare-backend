@@ -10,6 +10,8 @@ const errorHandler = require('./src/middlewares/errorHandler');
 const userRoutes = require('./src/routes/user');
 const postRoutes = require('./src/routes/post');
 const reportRoutes = require('./src//routes/report');
+const appointmentRoutes = require('./src/routes/appointment');
+const veterinarianRoutes = require('./src/routes/veterinarians');
 
 const app = express();
 
@@ -25,6 +27,8 @@ app.use('/images', express.static(path.join(__dirname, 'src', 'uploads')));
 app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/appointments', appointmentRoutes);
+app.use('/api/veterinarians', veterinarianRoutes);
 
 // Health check
 app.get('/health', (_req, res) => {

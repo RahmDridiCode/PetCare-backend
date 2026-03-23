@@ -32,6 +32,12 @@ router.put('/:id',authenticate, upload.single('image'), updateUserWithImage);
 
 router.get('',authenticate, findAllUsers);
 
+// Return all veterinarians
+router.get('/veterinarians', authenticate, (req, res, next) => {
+  // delegate to controller function
+  return require('../controllers/userController').getAllVeterinarians(req, res, next);
+});
+
 
 router.delete('/deleteuser/:id',authenticate, deleteUser);
 

@@ -46,7 +46,7 @@ const createPost = async (req, res, next) => {
     const populatedPost = await p.populate('user', 'fname lname image');
     res.status(201).json(p);
   } catch (err) {
-    next(err);d
+    next(err);
   }
 };
 

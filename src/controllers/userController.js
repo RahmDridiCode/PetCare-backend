@@ -7,7 +7,7 @@ const SALT_ROUNDS = parseInt(process.env.BCRYPT_SALT_ROUNDS, 10) || 12;
 
 const signup = async (req, res, next) => {
   try {
-    const { fname, lname, email, password, birthdate, phone } = req.body;
+    const { fname, lname, email, password, birthdate, phone, role } = req.body;
 
     const hash = await bcrypt.hash(password, SALT_ROUNDS);
 
@@ -18,6 +18,7 @@ const signup = async (req, res, next) => {
       lname,
       birthdate,
       phone,
+      role: role || 'user',
     });
 
     const result = await user.save();
@@ -137,6 +138,15 @@ const findAllUsers = async (_req, res, next) => {
   }
 };
 
+const getAllVeterinarians = async (_req, res, next) => {
+  try {
+    const vets = await User.find({ role: 'veterinaire' });
+    res.status(200).json(vets);
+  } catch (err) {
+    next(err);
+  }
+};
+
 const deleteUser = async (req, res, next) => {
   try {
     const id = req.params.id;
@@ -189,6 +199,7 @@ module.exports = {
   getUserById,
   updateUserWithImage,
   findAllUsers,
+  getAllVeterinarians,
   deleteUser,
   updateUser,
 };
