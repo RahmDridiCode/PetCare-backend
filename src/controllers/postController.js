@@ -43,9 +43,10 @@ const createPost = async (req, res, next) => {
     });
 
     const p = await post.save();
+    const populatedPost = await p.populate('user', 'fname lname image');
     res.status(201).json(p);
   } catch (err) {
-    next(err);
+    next(err);d
   }
 };
 
@@ -55,15 +56,32 @@ const updatePost = async (req, res, next) => {
     if (!req.user || !req.user.userId)
       return res.status(401).json({ message: 'Utilisateur non authentifié' });
 
-    const post = await Post.findOneAndUpdate(
-        { _id: req.params.id, user: req.user.userId }, // s'assure que seul le créateur peut modifier
-        { description: req.body.description },
-        { returnDocument: 'after' } // remplace `new: true`
-    );
-
+    const post = await Post.findOne({ _id: req.params.id, user: req.user.userId });
     if (!post) return res.status(404).json({ message: 'Post non trouvé ou pas autorisé' });
 
-    res.status(200).json(post);
+    // Mise à jour de la description
+    if (req.body.description) post.description = req.body.description;
+
+    // Gestion des images
+    const baseUrl = req.protocol + '://' + req.get('host');
+
+    // Images existantes à conserver
+    let existingImages = [];
+    if (req.body.existingImages) {
+      try {
+        existingImages = JSON.parse(req.body.existingImages);
+      } catch {}
+    }
+
+    // Nouvelles images uploadées
+    const newImages = req.files ? req.files.map(f => baseUrl + '/images/' + f.filename) : [];
+
+    post.images = [...existingImages, ...newImages];
+
+    await post.save();
+    const populatedPost = await post.populate('user', 'fname lname image');
+
+    res.status(200).json(populatedPost);
   } catch (err) {
     next(err);
   }

@@ -9,6 +9,7 @@ const errorHandler = require('./src/middlewares/errorHandler');
 // Import routes
 const userRoutes = require('./src/routes/user');
 const postRoutes = require('./src/routes/post');
+const reportRoutes = require('./src//routes/report');
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use('/images', express.static(path.join(__dirname, 'src', 'uploads')));
 // --------------- Routes ---------------
 app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Health check
 app.get('/health', (_req, res) => {

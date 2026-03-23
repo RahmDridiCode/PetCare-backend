@@ -77,11 +77,27 @@ const googleAuth = async (req, res, next) => {
 
 const searchUsers = async (req, res, next) => {
   try {
-    const name = req.query.name;
-    const user = await User.find({
-      $or: [{ fname: new RegExp(name, 'i') }, { lname: new RegExp(name, 'i') }],
+    const name = req.query.name; // ex : "Ahmed Dridi"
+    console.log('Searching users with name:', name);
+
+    const regex = new RegExp(name.split(' ').join('.*'), 'i');
+
+    const users = await User.find({
+      $or: [
+        { fname: regex }, // match prénom
+        { lname: regex }, // match nom
+        {
+          $expr: {
+            $regexMatch: {
+              input: { $concat: ['$fname', ' ', '$lname'] }, // combine prénom + nom
+              regex: regex,
+            },
+          },
+        },
+      ],
     });
-    res.status(200).json({ user: user });
+
+    res.status(200).json({ users });
   } catch (err) {
     next(err);
   }

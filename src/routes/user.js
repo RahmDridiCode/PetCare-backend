@@ -20,22 +20,22 @@ router.post('/signup', signup);
 router.post('/login', login);
 router.post('/googleAuth', googleAuth);
 
-// User search
-router.get('/search', searchUsers);
 
-// Get user by id
-router.get('/:id', getUserById);
+router.get('/search',authenticate, searchUsers);
 
-// Update user with image upload
-router.put('/:id', upload.single('image'), updateUserWithImage);
 
-// Get all users (non-admin)
-router.get('', findAllUsers);
+router.get('/:id', authenticate, getUserById);
 
-// Delete user
-router.delete('/deleteuser/:id', deleteUser);
 
-// Update user (patch)
-router.patch('/updateuser/:id', updateUser);
+router.put('/:id',authenticate, upload.single('image'), updateUserWithImage);
+
+
+router.get('',authenticate, findAllUsers);
+
+
+router.delete('/deleteuser/:id',authenticate, deleteUser);
+
+
+router.patch('/updateuser/:id',authenticate, updateUser);
 
 module.exports = router;
