@@ -35,6 +35,9 @@ const getConversation = async (req, res, next) => {
       .populate('senderId', 'fname lname image')
       .populate('receiverId', 'fname lname image');
 
+    // mark messages received by me from the other user as read
+    await Message.updateMany({ senderId: otherId, receiverId: myId, read: false }, { $set: { read: true } });
+
     res.status(200).json(messages);
   } catch (err) {
     next(err);
@@ -59,10 +62,12 @@ const getUsers = async (req, res, next) => {
     const conversations = await Promise.all(
       users.map(async (u) => {
         const last = await Message.findOne({ $or: [ { senderId: myId, receiverId: u._id }, { senderId: u._id, receiverId: myId } ] }).sort('-createdAt');
+        const unreadCount = await Message.countDocuments({ senderId: u._id, receiverId: myId, read: false });
         return {
           user: u,
           lastMessage: last ? last.text : '',
           lastAt: last ? last.createdAt : null,
+          unreadCount,
         };
       })
     );
