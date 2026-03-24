@@ -12,6 +12,7 @@ const postRoutes = require('./src/routes/post');
 const reportRoutes = require('./src//routes/report');
 const appointmentRoutes = require('./src/routes/appointment');
 const veterinarianRoutes = require('./src/routes/veterinarians');
+const messageRoutes = require('./src/routes/message');
 
 const app = express();
 
@@ -29,6 +30,7 @@ app.use('/api/posts', postRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/veterinarians', veterinarianRoutes);
+app.use('/api/messages', messageRoutes);
 
 // Health check
 app.get('/health', (_req, res) => {
