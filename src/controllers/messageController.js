@@ -8,10 +8,15 @@ const sendMessage = async (req, res, next) => {
 
     const msg = new Message({ senderId: req.user.userId, receiverId, text });
     const saved = await msg.save();
-
     const populated = await Message.findById(saved._id)
           .populate('senderId', 'fname lname image')
           .populate('receiverId', 'fname lname image');
+
+    // emit socket event to receiver if connected
+    try {
+      const io = req.app.get('io');
+      if (io) io.to(receiverId).emit('receiveMessage', populated);
+    } catch {}
 
     res.status(201).json(populated);
   } catch (err) {
