@@ -29,7 +29,8 @@ const register = async (req, res, next) => {
     res.status(201).json({
       message: 'User registered successfully',
       token,
-      expiresIn: process.env.JWT_EXPIRES_IN || '1h',
+      expiresIn: getExpiresInSeconds(),
+      userId: user._id,
       user,
     });
   } catch (err) {
@@ -60,7 +61,8 @@ const login = async (req, res, next) => {
 
     res.status(200).json({
       token,
-      expiresIn: process.env.JWT_EXPIRES_IN || '1h',
+      expiresIn: getExpiresInSeconds(),
+      userId: user._id,
       user,
     });
   } catch (err) {
@@ -85,7 +87,8 @@ const googleAuth = async (req, res, next) => {
     res.status(200).json({
       message: created ? 'User created' : 'Authentication succeeded',
       token,
-      expiresIn: process.env.JWT_EXPIRES_IN || '1h',
+      expiresIn: getExpiresInSeconds(),
+      userId: user._id,
       user,
     });
   } catch (err) {
@@ -94,11 +97,16 @@ const googleAuth = async (req, res, next) => {
 };
 
 function generateToken(user) {
+  const expiresIn = parseInt(process.env.JWT_EXPIRES_IN_SECONDS, 10) || 3600; // secondes
   return jwt.sign(
     { userId: user._id, email: user.email, role: user.role },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '1h' }
+    { expiresIn }
   );
+}
+
+function getExpiresInSeconds() {
+  return parseInt(process.env.JWT_EXPIRES_IN_SECONDS, 10) || 3600;
 }
 
 module.exports = { register, login, googleAuth };

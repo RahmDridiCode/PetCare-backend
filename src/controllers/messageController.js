@@ -16,6 +16,11 @@ const sendMessage = async (req, res, next) => {
     try {
       const io = req.app.get('io');
       if (io) io.to(receiverId).emit('receiveMessage', populated);
+      // emit unread messages count to receiver
+      try {
+        const unread = await Message.countDocuments({ receiverId, read: false });
+        io.to(receiverId).emit('messagesCount', { count: unread });
+      } catch (e) {}
     } catch {}
 
     res.status(201).json(populated);
@@ -42,6 +47,15 @@ const getConversation = async (req, res, next) => {
 
     // mark messages received by me from the other user as read
     await Message.updateMany({ senderId: otherId, receiverId: myId, read: false }, { $set: { read: true } });
+
+    // emit updated unread count via socket
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        const unread = await Message.countDocuments({ receiverId: myId, read: false });
+        io.to(myId).emit('messagesCount', { count: unread });
+      }
+    } catch (e) {}
 
     res.status(200).json(messages);
   } catch (err) {
@@ -83,4 +97,16 @@ const getUsers = async (req, res, next) => {
   }
 };
 
-module.exports = { sendMessage, getConversation, getUsers };
+const getUnreadTotal = async (req, res, next) => {
+  try {
+    if (!req.user || !req.user.userId) return res.status(401).json({ message: 'Unauthorized' });
+    const myId = req.user.userId;
+    const count = await Message.countDocuments({ receiverId: myId, read: false });
+    res.status(200).json({ count });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { sendMessage, getConversation, getUsers, getUnreadTotal };
+

@@ -24,6 +24,17 @@ const postSchema = new mongoose.Schema(
         ref: 'Comment',
       },
     ],
+    // Partage : si ce post est un partage, sharedBy = userId qui a partagé, originalPost = post source
+    sharedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    originalPost: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Post',
+      default: null,
+    },
   },
   {
     timestamps: true,
