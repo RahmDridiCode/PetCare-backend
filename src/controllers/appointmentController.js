@@ -1,5 +1,6 @@
 const Appointment = require('../models/appointmentModel');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 
 const createAppointment = async (req, res, next) => {
   try {
@@ -26,6 +27,23 @@ const createAppointment = async (req, res, next) => {
           { path: 'userId', select: 'fname lname' },
           { path: 'veterinarianId', select: 'fname lname' }
       ]);
+
+      // Notifier le vétérinaire en temps réel
+      try {
+        const notif = await Notification.create({
+          userId: veterinarianId,           // destinataire = le vétérinaire
+          actorId: req.user.userId,         // acteur = le patient
+          actionType: 'appointment',
+          appointmentId: saved._id,
+        });
+        await notif.populate('actorId', 'fname lname image');
+        const io = req.app.get('io');
+        if (io) {
+          io.to(veterinarianId.toString()).emit('notification', notif);
+          const count = await Notification.countDocuments({ userId: veterinarianId, read: false });
+          io.to(veterinarianId.toString()).emit('notificationsCount', { count });
+        }
+      } catch (e) { console.error('Notification error:', e); }
 
       res.status(201).json(saved);
   } catch (err) {
@@ -74,6 +92,24 @@ const acceptAppointment = async (req, res, next) => {
 
     appointment.status = 'accepted';
     await appointment.save();
+
+    // Notifier le patient
+    try {
+      const notif = await Notification.create({
+        userId: appointment.userId,         // destinataire = le patient
+        actorId: req.user.userId,           // acteur = le vétérinaire
+        actionType: 'appointment_accepted',
+        appointmentId: appointment._id,
+      });
+      await notif.populate('actorId', 'fname lname image');
+      const io = req.app.get('io');
+      if (io) {
+        io.to(appointment.userId.toString()).emit('notification', notif);
+        const count = await Notification.countDocuments({ userId: appointment.userId, read: false });
+        io.to(appointment.userId.toString()).emit('notificationsCount', { count });
+      }
+    } catch (e) { console.error('Notification error:', e); }
+
     res.status(200).json(appointment);
   } catch (err) {
     next(err);
@@ -93,6 +129,24 @@ const rejectAppointment = async (req, res, next) => {
 
     appointment.status = 'rejected';
     await appointment.save();
+
+    // Notifier le patient
+    try {
+      const notif = await Notification.create({
+        userId: appointment.userId,
+        actorId: req.user.userId,
+        actionType: 'appointment_rejected',
+        appointmentId: appointment._id,
+      });
+      await notif.populate('actorId', 'fname lname image');
+      const io = req.app.get('io');
+      if (io) {
+        io.to(appointment.userId.toString()).emit('notification', notif);
+        const count = await Notification.countDocuments({ userId: appointment.userId, read: false });
+        io.to(appointment.userId.toString()).emit('notificationsCount', { count });
+      }
+    } catch (e) { console.error('Notification error:', e); }
+
     res.status(200).json(appointment);
   } catch (err) {
     next(err);

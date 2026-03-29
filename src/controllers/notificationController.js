@@ -9,8 +9,9 @@ const getNotifications = async (req, res, next) => {
         select: '_id sharedBy originalPost description',
         populate: { path: 'sharedBy', select: 'fname lname' },
       })
+      .populate('appointmentId', '_id status date time')
       .sort({ createdAt: -1 })
-      .limit(50);
+      .limit(30);
     res.status(200).json(notifications);
   } catch (err) {
     next(err);
@@ -48,8 +49,9 @@ const markAllRead = async (req, res, next) => {
         select: '_id sharedBy originalPost description',
         populate: { path: 'sharedBy', select: 'fname lname' },
       })
+      .populate('appointmentId', '_id status date time')
       .sort({ createdAt: -1 })
-      .limit(50);
+      .limit(30);
     // emit count 0
     try {
       const io = req.app.get('io');
