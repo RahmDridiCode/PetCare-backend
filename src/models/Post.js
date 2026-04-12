@@ -6,6 +6,14 @@ const postSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    category: {
+      type: String,
+      enum: ['sante', 'alimentation', 'comportement', 'adoption', 'autre'],
+      required: true,
+      trim: true,
+      default: 'autre',
+      index: true,
+    },
     images: [String],
     user: {
       type: mongoose.Schema.Types.ObjectId,

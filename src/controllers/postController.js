@@ -5,13 +5,40 @@ const Like = require('../models/Like');
 const Notification = require('../models/Notification');
 
 
-const getAllPosts = async (_req, res, next) => {
+const ALLOWED_CATEGORIES = ['sante', 'alimentation', 'comportement', 'adoption', 'autre'];
+
+const getAllPosts = async (req, res, next) => {
   try {
-    const posts = await Post.find({})
+    const categoryQuery = req.query.category || req.query.categorie;
+    const { startDate, endDate } = req.query;
+
+    const filter = {};
+
+    if (categoryQuery) {
+      filter.category = categoryQuery;
+    }
+
+    if (startDate || endDate) {
+      filter.createdAt = {};
+      if (startDate) {
+        const sd = new Date(startDate);
+        if (!isNaN(sd.getTime())) filter.createdAt.$gte = sd;
+      }
+      if (endDate) {
+        const ed = new Date(endDate);
+        ed.setHours(23, 59, 59, 999);
+        if (!isNaN(ed.getTime())) filter.createdAt.$lte = ed;
+      }
+      if (Object.keys(filter.createdAt).length === 0) delete filter.createdAt;
+    }
+
+    const posts = await Post.find(filter)
       .populate('user', 'fname lname image')
       .populate('sharedBy', 'fname lname image')
       .populate('comments')
-      .populate('likes');
+      .populate('likes')
+      .sort({ createdAt: -1 });
+
     res.status(200).json(posts);
   } catch (err) {
     next(err);
@@ -45,10 +72,16 @@ const createPost = async (req, res, next) => {
             ? req.files.map((f) => baseUrl + '/images/' + f.filename)
             : [];
 
+    const category = req.body.category || req.body.categorie || 'autre';
+    if (category && !ALLOWED_CATEGORIES.includes(category)) {
+      return res.status(400).json({ message: 'Catégorie invalide', allowed: ALLOWED_CATEGORIES });
+    }
+
     const post = new Post({
       description: req.body.description,
       images: images,
       user: req.user.userId,
+      category,
     });
 
     const p = await post.save();
@@ -70,6 +103,15 @@ const updatePost = async (req, res, next) => {
 
     // Mise à jour de la description
     if (req.body.description) post.description = req.body.description;
+
+    // Mise à jour de la catégorie (si fournie)
+    const newCategory = req.body.category || req.body.categorie;
+    if (typeof newCategory !== 'undefined') {
+      if (newCategory && !ALLOWED_CATEGORIES.includes(newCategory)) {
+        return res.status(400).json({ message: 'Catégorie invalide', allowed: ALLOWED_CATEGORIES });
+      }
+      post.category = newCategory || 'autre';
+    }
 
     // Gestion des images
     const baseUrl = req.protocol + '://' + req.get('host');
