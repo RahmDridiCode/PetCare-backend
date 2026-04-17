@@ -43,6 +43,13 @@ const postSchema = new mongoose.Schema(
       ref: 'Post',
       default: null,
     },
+    reports: [
+      {
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        reason: { type: String },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
   },
   {
     timestamps: true,

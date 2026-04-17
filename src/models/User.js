@@ -39,6 +39,14 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    diploma: {
+      type: String,
+      default: '',
+    },
+    isApproved: {
+      type: Boolean,
+      default: false,
+    },
     rating: { type: Number, default: 0 },        // note moyenne
     ratingCount: { type: Number, default: 0 }    // nombre de votes
   },

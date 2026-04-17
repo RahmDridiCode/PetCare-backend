@@ -14,6 +14,7 @@ const {
   toggleLike,
   getLikes,
   sharePost,
+  reportPost,
   getPostsByUser,
 } = require('../controllers/postController');
 
@@ -38,5 +39,6 @@ router.post('/:id/like', authenticate, toggleLike);
 router.get('/:id/likes', authenticate, getLikes);
 
 router.post('/:id/share', authenticate, sharePost);
+router.post('/:id/report', authenticate, reportPost);
 
 module.exports = router;

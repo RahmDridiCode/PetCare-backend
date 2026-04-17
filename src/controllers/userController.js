@@ -11,6 +11,16 @@ const signup = async (req, res, next) => {
 
     const hash = await bcrypt.hash(password, SALT_ROUNDS);
 
+    // If registering as a veterinarian, diploma file is required and account must be pending approval
+    let diplomaPath = '';
+    if (role === 'veterinaire') {
+      if (!req.file) {
+        return res.status(400).json({ message: 'Diploma (PDF) is required for veterinarian registration' });
+      }
+      const url = req.protocol + '://' + req.get('host');
+      diplomaPath = url + '/images/diplomas/' + req.file.filename;
+    }
+
     const user = new User({
       email,
       password: hash,
@@ -19,6 +29,8 @@ const signup = async (req, res, next) => {
       birthdate,
       phone,
       role: role || 'user',
+      diploma: diplomaPath,
+      isApproved: role === 'veterinaire' ? false : true,
     });
 
     const result = await user.save();
@@ -46,8 +58,19 @@ const login = async (req, res, next) => {
       return res.status(401).json({ message: 'Unauthorised!' });
     }
 
+    if (user.role === 'veterinaire' && !user.isApproved) {
+      return res.status(403).json({ message: 'Your veterinarian account is pending approval' });
+    }
+
     const token = jwt.sign(
-      { email: user.email, userId: user._id, role: user.role },
+      {
+        email: user.email,
+        userId: user._id,
+        role: user.role,
+        isApproved: user.isApproved,
+        fname: user.fname,
+        lname: user.lname,
+      },
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );

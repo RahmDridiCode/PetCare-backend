@@ -99,7 +99,14 @@ const googleAuth = async (req, res, next) => {
 function generateToken(user) {
   const expiresIn = parseInt(process.env.JWT_EXPIRES_IN_SECONDS, 10) || 3600; // secondes
   return jwt.sign(
-    { userId: user._id, email: user.email, role: user.role },
+    {
+      userId: user._id,
+      email: user.email,
+      role: user.role,
+      isApproved: user.isApproved,
+      fname: user.fname,
+      lname: user.lname,
+    },
     process.env.JWT_SECRET,
     { expiresIn }
   );

@@ -424,6 +424,24 @@ const getPostsByUser = async (req, res, next) => {
     next(err);
   }
 };
+  const reportPost = async (req, res, next) => {
+    try {
+      if (!req.user || !req.user.userId)
+        return res.status(401).json({ message: 'Utilisateur non authentifié' });
+
+      const post = await Post.findById(req.params.id);
+      if (!post) return res.status(404).json({ message: 'Post non trouvé' });
+
+      const reason = req.body.reason || 'No reason provided';
+      post.reports = post.reports || [];
+      post.reports.push({ userId: req.user.userId, reason, createdAt: new Date() });
+
+      const saved = await post.save();
+      res.status(200).json(saved);
+    } catch (err) {
+      next(err);
+    }
+  };
 
 module.exports = {
   getAllPosts,
@@ -439,4 +457,5 @@ module.exports = {
   getLikes,
   sharePost,
   getPostsByUser,
+    reportPost,
 };

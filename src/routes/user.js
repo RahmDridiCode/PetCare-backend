@@ -1,6 +1,7 @@
 const express = require('express');
 const { authenticate } = require('../middlewares/auth');
 const upload = require('../middlewares/upload');
+const uploadDiploma = require('../middlewares/uploadDiploma');
 const {
   signup,
   login,
@@ -16,7 +17,8 @@ const {
 const router = express.Router();
 
 
-router.post('/signup', signup);
+// Accept an optional diploma file (only used when role === 'veterinaire')
+router.post('/signup', uploadDiploma.single('diploma'), signup);
 router.post('/login', login);
 router.post('/googleAuth', googleAuth);
 

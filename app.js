@@ -14,6 +14,7 @@ const appointmentRoutes = require('./src/routes/appointment');
 const veterinarianRoutes = require('./src/routes/veterinarians');
 const messageRoutes = require('./src/routes/message');
 const notificationRoutes = require('./src/routes/notification');
+const adminRoutes = require('./src/routes/admin');
 
 const app = express();
 
@@ -33,6 +34,7 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api/veterinarians', veterinarianRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check
 app.get('/health', (_req, res) => {
