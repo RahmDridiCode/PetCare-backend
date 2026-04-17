@@ -7,7 +7,7 @@ const Like = require('../models/Like');
 const getPendingVeterinarians = async (req, res, next) => {
   try {
     const vets = await User.find({ role: 'veterinaire', isApproved: false }).select(
-      'fname lname email diploma createdAt'
+      'fname lname email phone adresse diploma createdAt'
     );
     res.status(200).json(vets);
   } catch (err) {

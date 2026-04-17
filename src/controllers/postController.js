@@ -437,6 +437,27 @@ const getPostsByUser = async (req, res, next) => {
       post.reports.push({ userId: req.user.userId, reason, createdAt: new Date() });
 
       const saved = await post.save();
+      // create notifications for admins about this report
+      try {
+        const admins = await require('../models/User').find({ role: 'admin' }).select('_id');
+        for (const a of admins) {
+          const notif = await Notification.create({
+            userId: a._id,
+            actorId: req.user.userId,
+            actionType: 'report',
+            postId: post._id,
+          });
+          const populated = await Notification.findById(notif._id).populate('actorId', 'fname lname image').populate('postId', '_id');
+          const io = req.app && req.app.get && req.app.get('io');
+          if (io) {
+            io.to(a._id.toString()).emit('notification', populated);
+            const count = await Notification.countDocuments({ userId: a._id, read: false });
+            io.to(a._id.toString()).emit('notificationsCount', { count });
+          }
+        }
+      } catch (e) {
+        console.error('Report notification error:', e.message || e);
+      }
       res.status(200).json(saved);
     } catch (err) {
       next(err);

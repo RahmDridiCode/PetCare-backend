@@ -34,6 +34,31 @@ const signup = async (req, res, next) => {
     });
 
     const result = await user.save();
+
+    // notify admins about new veterinarian request
+    try {
+      if (result.role === 'veterinaire' && result.isApproved === false) {
+        const admins = await User.find({ role: 'admin' }).select('_id');
+        const Notification = require('../models/Notification');
+        for (const a of admins) {
+          const notif = await Notification.create({
+              userId: a._id,
+              actorId: result._id,
+              actionType: 'vet_request',
+            });
+          const populated = await Notification.findById(notif._id).populate('actorId', 'fname lname image');
+          const io = req.app && req.app.get && req.app.get('io');
+          if (io) {
+            io.to(a._id.toString()).emit('notification', populated);
+            const count = await Notification.countDocuments({ userId: a._id, read: false });
+            io.to(a._id.toString()).emit('notificationsCount', { count });
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Signup notification error:', e.message || e);
+    }
+
     res.status(200).json({ message: 'User created', result: result });
   } catch (err) {
     next(err);
