@@ -1,7 +1,13 @@
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const Post = require('../models/Post');
 const Comment = require('../models/Comment');
 const Like = require('../models/Like');
+const Notification = require('../models/Notification');
+const Message = require('../models/Message');
+const Report = require('../models/Report');
+const Appointment = require('../models/appointmentModel');
+const Chat = require('../models/Chat');
 
 // List pending veterinarians
 const getPendingVeterinarians = async (req, res, next) => {
@@ -47,14 +53,64 @@ const getAllUsers = async (req, res, next) => {
   }
 };
 
-const deleteUser = async (req, res, next) => {
+const deleteUser = async (req, res) => {
   try {
-    const id = req.params.id;
-    const user = await User.findByIdAndDelete(id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    res.status(200).json({ message: 'User deleted' });
+    const userId = req.params.id;
+
+    // 1. Delete all user-related data
+    await Promise.all([
+      Comment.deleteMany({ user: userId }),
+      Like.deleteMany({ user: userId }),
+      Notification.deleteMany({ $or: [{ userId }, { actorId: userId }] }),
+      Chat.deleteMany({ userId }),
+      Message.deleteMany({ $or: [{ senderId: userId }, { receiverId: userId }] }),
+      Report.deleteMany({ id_sender: userId }),
+      Appointment.deleteMany({ $or: [{ userId }, { veterinarianId: userId }] })
+    ]);
+
+    // 2. CLEAN REFERENCES (IMPORTANT PART YOU MISSED)
+
+    await Promise.all([
+      // remove sharedBy reference
+      Post.updateMany(
+        { sharedBy: userId },
+        { $unset: { sharedBy: "" } }
+      ),
+
+      // remove user reports inside posts
+      Post.updateMany(
+        { "reports.userId": userId },
+        { $pull: { reports: { userId: userId } } }
+      ),
+
+      // remove originalPost references
+      Post.updateMany(
+        { originalPost: userId },
+        { $set: { originalPost: null } }
+      ),
+
+      // optional safety: remove user from likes/comments arrays if embedded
+      Post.updateMany(
+        {},
+        {
+          $pull: {
+            likes: { user: userId },
+            comments: { user: userId }
+          }
+        }
+      )
+    ]);
+
+    // 3. Delete user
+    await User.deleteOne({ _id: userId });
+
+    return res.json({ message: "User deleted successfully" });
+
   } catch (err) {
-    next(err);
+    return res.status(500).json({
+      message: "Error deleting user",
+      error: err.message
+    });
   }
 };
 

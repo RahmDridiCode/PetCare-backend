@@ -43,6 +43,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    adresse: {
+      street: { type: String, default: '' },
+      ville: { type: String, default: '' },
+      region: { type: String, default: '' },
+    },
     isApproved: {
       type: Boolean,
       default: false,

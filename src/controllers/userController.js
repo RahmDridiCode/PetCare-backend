@@ -8,6 +8,16 @@ const SALT_ROUNDS = parseInt(process.env.BCRYPT_SALT_ROUNDS, 10) || 12;
 const signup = async (req, res, next) => {
   try {
     const { fname, lname, email, password, birthdate, phone, role } = req.body;
+    // adresse may come as JSON string when form is multipart/form-data
+    let adresse = undefined;
+    if (req.body.adresse) {
+      try {
+        adresse = typeof req.body.adresse === 'string' ? JSON.parse(req.body.adresse) : req.body.adresse;
+      } catch (e) {
+        // ignore parse error and leave adresse undefined
+        adresse = undefined;
+      }
+    }
 
     const hash = await bcrypt.hash(password, SALT_ROUNDS);
 
@@ -31,6 +41,7 @@ const signup = async (req, res, next) => {
       role: role || 'user',
       diploma: diplomaPath,
       isApproved: role === 'veterinaire' ? false : true,
+      ...(adresse ? { adresse } : {}),
     });
 
     const result = await user.save();
@@ -170,6 +181,11 @@ const updateUserWithImage = async (req, res, next) => {
       imagePath = url + '/images/' + req.file.filename;
       user = { ...req.body, image: imagePath };
     }
+    // parse adresse if present as JSON string (multipart form)
+    if (user.adresse && typeof user.adresse === 'string') {
+      try { user.adresse = JSON.parse(user.adresse); } catch (e) { /* ignore */ }
+    }
+
     const result = await User.findByIdAndUpdate(req.params.id, user, { new: true });
     res.status(200).json({ user: result });
   } catch (err) {
@@ -190,7 +206,7 @@ const getAllVeterinarians = async (_req, res, next) => {
   try {
     const vets = await User.find({ role: 'veterinaire' })
      .sort({ rating: -1 }) // tri par note décroissante
-     .select('fname lname rating ratingCount image'); // sélectionne les champs à afficher
+     .select('fname lname rating ratingCount image adresse'); // sélectionne les champs à afficher
     res.status(200).json(vets);
   } catch (err) {
     next(err);
@@ -221,7 +237,7 @@ const updateUser = async (req, res, next) => {
       return res.status(404).json({ error: 'Invalid ID' });
     }
 
-    const allowedFields = ['email', 'password', 'lname', 'fname', 'phone', 'image', 'role', 'birthdate'];
+    const allowedFields = ['email', 'password', 'lname', 'fname', 'phone', 'image', 'role', 'birthdate', 'adresse'];
     const body = {};
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) {
