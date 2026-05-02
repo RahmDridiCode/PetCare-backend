@@ -156,6 +156,85 @@ const clearReports = async (req, res, next) => {
   }
 };
 
+// Admin aggregated stats
+const getAdminStats = async (req, res, next) => {
+  try {
+    const startOfToday = new Date();
+    startOfToday.setHours(0,0,0,0);
+
+    const [
+      totalUsers,
+      totalVeterinarians,
+      totalPosts,
+      totalAppointments,
+      totalComments,
+      newUsersToday,
+      newPostsToday,
+    ] = await Promise.all([
+      User.countDocuments(),
+      User.countDocuments({ role: 'veterinaire' }),
+      Post.countDocuments(),
+      Appointment.countDocuments(),
+      Comment.countDocuments(),
+      User.countDocuments({ createdAt: { $gte: startOfToday } }),
+      Post.countDocuments({ createdAt: { $gte: startOfToday } }),
+    ]);
+
+    // Top posters
+    const topPosters = await Post.aggregate([
+      { $group: { _id: '$user', posts: { $sum: 1 } } },
+      { $sort: { posts: -1 } },
+      { $limit: 5 },
+      { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'user' } },
+      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+      { $project: { _id: 0, userId: '$_id', posts: 1, user: { fname: '$user.fname', lname: '$user.lname', email: '$user.email', image: '$user.image' } } }
+    ]);
+
+    // Top veterinarians by appointment count and avg rating
+    const topVets = await Appointment.aggregate([
+      { $group: { _id: '$veterinarianId', appointments: { $sum: 1 }, avgRating: { $avg: '$rating' } } },
+      { $sort: { appointments: -1 } },
+      { $limit: 5 },
+      { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'vet' } },
+      { $unwind: { path: '$vet', preserveNullAndEmptyArrays: true } },
+      { $project: { _id: 0, veterinarianId: '$_id', appointments: 1, avgRating: { $ifNull: ['$avgRating', 0] }, vet: { fname: '$vet.fname', lname: '$vet.lname', email: '$vet.email', image: '$vet.image' } } }
+    ]);
+
+    // Top liked posts
+    const topLikedPosts = await Like.aggregate([
+      { $group: { _id: '$post', likes: { $sum: 1 } } },
+      { $sort: { likes: -1 } },
+      { $limit: 5 },
+      { $lookup: { from: 'posts', localField: '_id', foreignField: '_id', as: 'post' } },
+      { $unwind: { path: '$post', preserveNullAndEmptyArrays: true } },
+      { $lookup: { from: 'users', localField: 'post.user', foreignField: '_id', as: 'author' } },
+      { $unwind: { path: '$author', preserveNullAndEmptyArrays: true } },
+      { $project: { _id: 0, postId: '$_id', likes: 1, post: { description: '$post.description', createdAt: '$post.createdAt' }, author: { fname: '$author.fname', lname: '$author.lname' } } }
+    ]);
+
+    // Recent activity: latest 6 posts and latest 6 appointments
+    const recentPosts = await Post.find().sort({ createdAt: -1 }).limit(6).populate('user', 'fname lname image').lean();
+    const recentAppointments = await Appointment.find().sort({ createdAt: -1 }).limit(6).populate('userId', 'fname lname').populate('veterinarianId', 'fname lname').lean();
+
+    res.status(200).json({
+      totalUsers,
+      totalVeterinarians,
+      totalPosts,
+      totalAppointments,
+      totalComments,
+      newUsersToday,
+      newPostsToday,
+      topPosters,
+      topVets,
+      topLikedPosts,
+      recentPosts,
+      recentAppointments,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getPendingVeterinarians,
   approveVeterinarian,
@@ -165,4 +244,6 @@ module.exports = {
   getReportedPosts,
   deletePost,
   clearReports,
+  getAdminStats,
 };
+

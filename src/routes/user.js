@@ -26,24 +26,20 @@ router.post('/googleAuth', googleAuth);
 router.get('/search',authenticate, searchUsers);
 
 
-router.get('/:id', authenticate, getUserById);
-
-
-router.put('/:id',authenticate, upload.single('image'), updateUserWithImage);
-
-
-router.get('',authenticate, findAllUsers);
-
 // Return all veterinarians
 router.get('/veterinarians', authenticate, (req, res, next) => {
   // delegate to controller function
   return require('../controllers/userController').getAllVeterinarians(req, res, next);
 });
 
+// List users (no id)
+router.get('', authenticate, findAllUsers);
 
-router.delete('/deleteuser/:id',authenticate, deleteUser);
+// Parameterized routes (by id) must come after static routes
+router.get('/:id', authenticate, getUserById);
+router.put('/:id', authenticate, upload.single('image'), updateUserWithImage);
 
-
-router.patch('/updateuser/:id',authenticate, updateUser);
+router.delete('/deleteuser/:id', authenticate, deleteUser);
+router.patch('/updateuser/:id', authenticate, updateUser);
 
 module.exports = router;

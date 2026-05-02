@@ -10,6 +10,7 @@ router.put('/veterinarians/:id/reject', authenticate, authorize('admin'), adminC
 
 router.get('/users', authenticate, authorize('admin'), adminController.getAllUsers);
 router.delete('/users/:id', authenticate, authorize('admin'), adminController.deleteUser);
+router.get('/stats', authenticate, authorize('admin'), adminController.getAdminStats);
 
 router.get('/reported-posts', authenticate, authorize('admin'), adminController.getReportedPosts);
 router.delete('/posts/:id', authenticate, authorize('admin'), adminController.deletePost);
